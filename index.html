@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Tic-Tac-Toe</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c1f26;--card:#fff;--line:#d7dbe2;--x:#2563eb;--o:#e11d48;--win:#fde68a}
+@media(prefers-color-scheme:dark){:root{--bg:#14161b;--fg:#e8eaf0;--card:#1e2128;--line:#343945;--x:#60a5fa;--o:#fb7185;--win:#5b4b12}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{margin:0;font-size:1.6rem}
+#status{min-height:1.5em;font-weight:600}
+#board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(92vw,330px)}
+.cell{aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:clamp(2.2rem,12vw,3.4rem);font-weight:700;color:var(--fg);cursor:pointer}
+.cell:disabled{cursor:default}
+.cell.x{color:var(--x)}.cell.o{color:var(--o)}
+.cell.win{background:var(--win)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+button.ctl{padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;font-size:.95rem}
+#score{font-size:.95rem;opacity:.85}
+small{opacity:.7}
+</style>
+</head>
+<body>
+<h1>AI Tic-Tac-Toe</h1>
+<div id="status"></div>
+<div id="board"></div>
+<div class="row">
+  <button class="ctl" id="restart">New game</button>
+  <button class="ctl" id="first">AI goes first: off</button>
+</div>
+<div id="score"></div>
+<small>You are X. The AI uses Minimax, so the best you can do is draw.</small>
+
+<script>
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const HUMAN="X",AI="O";
+let board,over,aiFirst=false,score={you:0,ai:0,draw:0};
+
+function winnerLine(b){
+  for(const l of LINES){const[a,c,d]=l;if(b[a]&&b[a]===b[c]&&b[a]===b[d])return l;}
+  return null;
+}
+function minimax(b,aiTurn,depth){
+  const l=winnerLine(b);
+  if(l)return b[l[0]]===AI?10-depth:depth-10;
+  if(b.every(Boolean))return 0;
+  let best=aiTurn?-Infinity:Infinity;
+  for(let i=0;i<9;i++){
+    if(b[i])continue;
+    b[i]=aiTurn?AI:HUMAN;
+    const s=minimax(b,!aiTurn,depth+1);
+    b[i]=null;
+    best=aiTurn?Math.max(best,s):Math.min(best,s);
+  }
+  return best;
+}
+function bestMove(b){
+  let best=-Infinity,move=null;
+  for(let i=0;i<9;i++){
+    if(b[i])continue;
+    b[i]=AI;const s=minimax(b,false,1);b[i]=null;
+    if(s>best){best=s;move=i;}
+  }
+  return move;
+}
+
+const boardEl=document.getElementById("board"),statusEl=document.getElementById("status");
+function render(){
+  boardEl.innerHTML="";
+  const wl=winnerLine(board);
+  board.forEach((v,i)=>{
+    const b=document.createElement("button");
+    b.className="cell"+(v?" "+v.toLowerCase():"")+(wl&&wl.includes(i)?" win":"");
+    b.textContent=v||"";
+    b.disabled=over||!!v;
+    b.setAttribute("aria-label","Square "+(i+1)+(v?", "+v:""));
+    b.onclick=()=>humanMove(i);
+    boardEl.appendChild(b);
+  });
+  document.getElementById("score").textContent=
+    `You ${score.you} · AI ${score.ai} · Draws ${score.draw}`;
+}
+function finish(){
+  const l=winnerLine(board);
+  if(l){over=true;const w=board[l[0]];
+    if(w===HUMAN){score.you++;statusEl.textContent="You win!";}
+    else{score.ai++;statusEl.textContent="AI wins!";}
+  }else if(board.every(Boolean)){over=true;score.draw++;statusEl.textContent="It's a draw.";}
+  return over;
+}
+function aiMove(){
+  board[bestMove(board)]=AI;
+  if(!finish())statusEl.textContent="Your turn";
+  render();
+}
+function humanMove(i){
+  if(over||board[i])return;
+  board[i]=HUMAN;
+  if(finish()){render();return;}
+  statusEl.textContent="AI is thinking...";
+  render();
+  setTimeout(aiMove,250);
+}
+function newGame(){
+  board=Array(9).fill(null);over=false;
+  statusEl.textContent="Your turn";
+  render();
+  if(aiFirst){statusEl.textContent="AI is thinking...";setTimeout(aiMove,250);}
+}
+document.getElementById("restart").onclick=newGame;
+document.getElementById("first").onclick=e=>{
+  aiFirst=!aiFirst;e.target.textContent="AI goes first: "+(aiFirst?"on":"off");newGame();
+};
+newGame();
+</script>
+</body>
+</html>
