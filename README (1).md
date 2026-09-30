@@ -2,7 +2,7 @@
 
 An unbeatable Tic-Tac-Toe opponent built with the **Minimax algorithm**. You play X, the AI plays O. The best a human can do is draw.
 
-**Live demo:** _add your GitHub Pages link here_
+**Live demo:**(https://shreyaakamra.github.io/AI-TIC-TAC-TOE/)
 
 ## How it works
 
